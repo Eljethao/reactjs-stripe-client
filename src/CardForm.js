@@ -39,7 +39,8 @@ const CardForm = () => {
             console.log('PaymentMethod:', paymentMethod);
             const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Imp1YXllZXRoYW8xNkBnbWFpbC5jb20iLCJpZCI6IjY2MjhiYTVmODlkNjMyNmFkNDExYTNmNyIsInN0YXR1cyI6IlRFTVBPUkFSWV9SRUdJU1RSQVRJT04iLCJpYXQiOjE3MTQ5NjE0MzYsImV4cCI6MTcxNTA0NzgzNn0.JDB20Ca9fCX-OB_CWFArUijEdEYxDa0O7fW7LUcryg8"
             // Post the paymentMethod.id to your server
-            axios.post('http://localhost:8000/api/v1/cards/', {
+            const url = "YOUR_URL";
+            axios.post(`${url}`, {
                 paymentMethodId: paymentMethod.id,
                 cardName: cardName,
                 email: email
