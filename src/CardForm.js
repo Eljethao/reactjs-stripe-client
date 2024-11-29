@@ -5,22 +5,26 @@ import {
     useStripe,
     useElements
 } from '@stripe/react-stripe-js';
-import axios from 'axios'; // Make sure to install axios: npm install axios
+import axios from 'axios';
+import './CardForm.css';
+import { token } from './config';
 
 const CardForm = () => {
     const stripe = useStripe();
     const elements = useElements();
-
-    // Optional: State for handling form fields like cardName and email
     const [cardName, setCardName] = useState('');
     const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!stripe || !elements) {
-            return; // Stripe.js has not loaded yet.
+            return;
         }
+
+        setIsLoading(true); // Show loading modal
 
         const cardElement = elements.getElement(CardElement);
 
@@ -29,54 +33,92 @@ const CardForm = () => {
             card: cardElement,
             billing_details: {
                 name: cardName,
-                email: email, // Include email if required
+                email: email,
             },
         });
 
         if (error) {
             console.log('[error]', error);
+            setIsLoading(false); // Hide loading modal on error
         } else {
             console.log('PaymentMethod:', paymentMethod);
-            const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Imp1YXllZXRoYW8xNkBnbWFpbC5jb20iLCJpZCI6IjY2MjhiYTVmODlkNjMyNmFkNDExYTNmNyIsInN0YXR1cyI6IlRFTVBPUkFSWV9SRUdJU1RSQVRJT04iLCJpYXQiOjE3MTQ5NjE0MzYsImV4cCI6MTcxNTA0NzgzNn0.JDB20Ca9fCX-OB_CWFArUijEdEYxDa0O7fW7LUcryg8"
-            // Post the paymentMethod.id to your server
-            const url = "YOUR_URL";
-            axios.post(`${url}`, {
-                paymentMethodId: paymentMethod.id,
-                cardName: cardName,
-                email: email
-            }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            })
-                .then(response => {
-                    console.log('Server response:', response.data);
-                })
-                .catch(error => {
-                    console.error('Error posting data:', error);
+            const url = "http://localhost:9090/v1/api/cards";
+
+            try {
+                const response = await axios.post(url, {
+                    paymentMethodId: paymentMethod.id,
+                    cardName: cardName,
+                    email: email
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 });
+                console.log('Server response:', response.data);
+                setShowSuccessModal(true); // Show success modal on success
+            } catch (error) {
+                console.error('Error posting data:', error);
+            } finally {
+                setIsLoading(false); // Hide loading modal after request completes
+            }
         }
     };
 
+    const closeSuccessModal = () => setShowSuccessModal(false);
+
     return (
-        <form onSubmit={handleSubmit}>
-            <CardElement />
-            <input
-                type="text"
-                value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                placeholder="Cardholder Name"
-            />
-            <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email Address"
-            />
-            <button type="submit" disabled={!stripe}>
-                Submit Payment
-            </button>
-        </form>
+        <div>
+            <form onSubmit={handleSubmit} className="card-form">
+                <h2 className="form-title">Payment Information</h2>
+                <div className="form-group">
+                    <label htmlFor="cardName">Cardholder Name</label>
+                    <input
+                        type="text"
+                        id="cardName"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        placeholder="Cardholder Name"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="email">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email Address"
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="card-element">Card Details</label>
+                    <CardElement id="card-element" className="card-element" />
+                </div>
+                <button type="submit" className="submit-button" disabled={!stripe || isLoading}>
+                    {isLoading ? 'Processing...' : 'Submit Payment'}
+                </button>
+            </form>
+
+            {isLoading && (
+                <div className="modal loading-modal">
+                    <div className="modal-content">
+                        <p>Processing payment...</p>
+                    </div>
+                </div>
+            )}
+
+            {showSuccessModal && (
+                <div className="modal success-modal">
+                    <div className="modal-content">
+                        <h2>Payment Successful!</h2>
+                        <p>Your payment was processed successfully.</p>
+                        <button onClick={closeSuccessModal}>Close</button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
